@@ -1,0 +1,2 @@
+#!/bin/bash
+g++ -Wall main.cpp ../vban_common/vban_functions.cpp ../vban_common/udp.cpp ../vban_common/pipewire_backend.cpp ../vban_common/vban_client_list.cpp ../vban_common/zita-resampler/resampler.cc ../vban_common/zita-resampler/vresampler.cc ../vban_common/zita-resampler/cresampler.cc ../vban_common/zita-resampler/resampler-table.cc -o3 -o vban_receptor_pw $(pkg-config --cflags --libs libpipewire-0.3)
