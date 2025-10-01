@@ -3,7 +3,7 @@
 
 void help_emitter(void)
 {
-    fprintf(stderr, "VBAN Jack Audio Connection Kit receptor for network and pipes/fifos\n\nBy Billy the Hippo\n\nusage: vban_receptor_jack <args>\r\n\n");
+    fprintf(stderr, "VBAN Jack Audio Connection Kit emitter for network and pipes/fifos\n\nBy Billy the Hippo\n\nusage: vban_emitter_jack <args>\r\n\n");
     //fprintf(stderr, "-m - multistream mode on\r\n");
     fprintf(stderr, "-i - ip address or pipe name (default ip=0, default pipename - stdin\r\n");
     fprintf(stderr, "-p - ip port (if 0 - pipe mode)\r\n");
@@ -126,7 +126,7 @@ int get_emitter_options(vban_stream_context_t* stream, int argc, char *argv[])
                 strncpy(stream->jack_server_name, optarg, strlen(optarg));
                 break;
             case 'h':
-                help_receptor();
+                help_emitter();
                 return 1;
             default:
                 fprintf(stderr, "Unrecognized parameter -%c", c);
@@ -365,29 +365,6 @@ int on_tx_process(jack_nframes_t nframes, void *arg)
         }
 
     vban_send_txbuffer(context, 0, 2);
-
-    // for (uint16_t pac=0; pac<context->pacnum; pac++)
-    // {
-    //     memcpy(context->txpacket.data, context->txbuf + pac*context->pacdatalen, context->pacdatalen);
-
-    //     for (uint8_t red=0; red<=context->redundancy+1; red++)
-    //         if (context->txport)
-    //         {
-    //             udp_send(context->txsock, context->txport, (char*)&context->txpacket, VBAN_HEADER_SIZE+context->pacdatalen);
-
-    //             int icnt = 0;
-    //             usleep(20);
-    //             while((check_icmp_status(context->txsock->fd)==111)&&(icnt<2))
-    //             {
-    //                 udp_send(context->txsock, context->txport, (char*)&context->txpacket, VBAN_HEADER_SIZE+context->pacdatalen);
-    //                 usleep(20);
-    //                 icnt++;
-    //             }
-    //             if (icnt==2) fprintf(stderr, "Получено ICMP уведомление 'Port Unreachable'\n");
-    //         }
-    //         else write(context->pipedesc, (uint8_t*)&context->txpacket, VBAN_HEADER_SIZE+context->pacdatalen);
-    //     context->txpacket.header.nuFrame++;
-    // }
 
     jack_nframes_t event_count = jack_midi_get_event_count(midibuf);
     if (event_count>0)

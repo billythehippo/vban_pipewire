@@ -536,7 +536,7 @@ inline int vban_send_txbuffer(vban_stream_context_t* context, in_addr_t txip = 0
         memcpy(context->txpacket.data, context->txbuf + pac*context->pacdatalen, context->pacdatalen);
 
         for (uint8_t red=0; red<=context->redundancy+1; red++)
-            if ((context->txport!= 0)&&(txip!=0))
+            if (context->txport!= 0)
             {
                 udp_send(context->txsock, context->txport, (char*)&context->txpacket, VBAN_HEADER_SIZE+context->pacdatalen, txip);
 

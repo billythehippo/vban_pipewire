@@ -27,7 +27,7 @@ enum spa_audio_format format_vban_to_spa(enum VBanBitResolution format_vban)
 
 void help_emitter(void)
 {
-    fprintf(stderr, "VBAN Pipewire emitter for network and pipes/fifos\n\nBy Billy the Hippo\n\nusage: vban_receptor_pw <args>\r\n\n");
+    fprintf(stderr, "VBAN Pipewire emitter for network and pipes/fifos\n\nBy Billy the Hippo\n\nusage: vban_emitter_pw <args>\r\n\n");
     //fprintf(stderr, "-m - multistream mode on\r\n");
     fprintf(stderr, "-i - ip address or pipe name (default ip=0, default pipename - stdin\r\n");
     fprintf(stderr, "-p - ip port (if 0 - pipe mode)\r\n");
@@ -143,7 +143,7 @@ int get_emitter_options(vban_stream_context_t* stream, int argc, char *argv[])
         case 'e':
             break;
         case 'h':
-            help_receptor();
+            help_emitter();
             return 1;
         default:
             fprintf(stderr, "Unrecognized parameter -%c", c);
@@ -286,7 +286,7 @@ static void on_tx_process(void *userdata)
     }
 
     context->txbuf = samples_ptr;
-    vban_send_txbuffer(context, context->iptx, 2);
+    vban_send_txbuffer(context, 0, 2);
 
     pw_stream_queue_buffer(data->stream, b);
 }
