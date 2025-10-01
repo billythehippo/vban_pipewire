@@ -22,7 +22,7 @@
 #include <inttypes.h>
 
 #define VBAN_HEADER_SIZE            (4 + 4 + 16 + 4)
-#define VBAN_HEADER_FOURC           'NABV'
+#define VBAN_HEADER_FOURC           0x4E414256 //'NABV'
 #define VBAN_STREAM_NAME_SIZE       16
 #define VBAN_PROTOCOL_MAX_SIZE      1464
 #define VBAN_DATA_MAX_SIZE          (VBAN_PROTOCOL_MAX_SIZE - VBAN_HEADER_SIZE)

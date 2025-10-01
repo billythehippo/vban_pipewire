@@ -35,9 +35,8 @@ extern "C"
 
 /** @file ringbuffer.h
  *
- * A set of library functions to make lock-free ringbuffers available
- * to JACK clients.  The `capture_client.c' (in the example_clients
- * directory) is a fully functioning user of this API.
+ * A set of library functions to make lock-free ringbuffers forked
+ * from JACK Audio Connection Kit
  *
  * The key attribute of a ringbuffer is that it can be safely accessed
  * by two threads simultaneously -- one reading from the buffer and
@@ -47,13 +46,15 @@ extern "C"
  * identities cannot be interchanged.
  */
 
-typedef struct {
+typedef struct
+{
     char *buf;
     size_t len;
 }
-jack_ringbuffer_data_t ;
+ringbuffer_data_t ;
 
-typedef struct {
+typedef struct
+{
     char	*buf;
     volatile size_t write_ptr;
     volatile size_t read_ptr;
@@ -61,27 +62,25 @@ typedef struct {
     size_t	size_mask;
     int	mlocked;
 }
-jack_ringbuffer_t ;
+ringbuffer_t ;
 
 
 /**
  * Allocates a ringbuffer data structure of a specified size. The
- * caller must arrange for a call to jack_ringbuffer_free() to release
+ * caller must arrange for a call to ringbuffer_free() to release
  * the memory associated with the ringbuffer.
  *
  * @param sz the ringbuffer size in bytes.
  *
- * @return a pointer to a new jack_ringbuffer_t, if successful; NULL
+ * @return a pointer to a new ringbuffer_t, if successful; NULL
  * otherwise.
  */
-inline jack_ringbuffer_t *jack_ringbuffer_create(size_t sz)
+__always_inline ringbuffer_t *ringbuffer_create(size_t sz)
 {
     int power_of_two;
-    jack_ringbuffer_t *rb;
+    ringbuffer_t *rb;
 
-    if ((rb = (jack_ringbuffer_t*)malloc(sizeof(jack_ringbuffer_t))) == NULL) {
-        return NULL;
-    }
+    if ((rb = (ringbuffer_t*)malloc(sizeof(ringbuffer_t))) == NULL) return NULL;
 
     for (power_of_two = 1; 1 << power_of_two < sz; power_of_two++) ;
 
@@ -90,7 +89,8 @@ inline jack_ringbuffer_t *jack_ringbuffer_create(size_t sz)
     rb->size_mask -= 1;
     rb->write_ptr = 0;
     rb->read_ptr = 0;
-    if ((rb->buf = (char*)malloc(rb->size)) == NULL) {
+    if ((rb->buf = (char*)malloc(rb->size)) == NULL)
+    {
         free (rb);
         return NULL;
     }
@@ -102,16 +102,14 @@ inline jack_ringbuffer_t *jack_ringbuffer_create(size_t sz)
 
 /**
  * Frees the ringbuffer data structure allocated by an earlier call to
- * jack_ringbuffer_create().
+ * ringbuffer_create().
  *
  * @param rb a pointer to the ringbuffer structure.
  */
-inline void jack_ringbuffer_free(jack_ringbuffer_t *rb)
+__always_inline void ringbuffer_free(ringbuffer_t *rb)
 {
 #ifdef USE_MLOCK
-    if (rb->mlocked) {
-        munlock (rb->buf, rb->size);
-    }
+    if (rb->mlocked) munlock(rb->buf, rb->size);
 #endif  /* USE_MLOCK */
     free (rb->buf);
     free (rb);
@@ -125,18 +123,15 @@ inline void jack_ringbuffer_free(jack_ringbuffer_t *rb)
  *
  * @return the number of bytes available to read.
  */
-inline size_t jack_ringbuffer_read_space (const jack_ringbuffer_t * rb)
+__always_inline size_t ringbuffer_read_space (const ringbuffer_t * rb)
 {
     size_t w, r;
 
     w = rb->write_ptr;
     r = rb->read_ptr;
 
-    if (w > r) {
-        return w - r;
-    } else {
-        return (w - r + rb->size) & rb->size_mask;
-    }
+    if (w > r) return w - r;
+    else return (w - r + rb->size) & rb->size_mask;
 }
 
 
@@ -147,27 +142,23 @@ inline size_t jack_ringbuffer_read_space (const jack_ringbuffer_t * rb)
  *
  * @return the amount of free space (in bytes) available for writing.
  */
-inline size_t jack_ringbuffer_write_space (const jack_ringbuffer_t * rb)
+__always_inline size_t ringbuffer_write_space (const ringbuffer_t * rb)
 {
     size_t w, r;
 
     w = rb->write_ptr;
     r = rb->read_ptr;
 
-    if (w > r) {
-        return ((r - w + rb->size) & rb->size_mask) - 1;
-    } else if (w < r) {
-        return (r - w) - 1;
-    } else {
-        return rb->size - 1;
-    }
+    if (w > r) return ((r - w + rb->size) & rb->size_mask) - 1;
+    else if (w < r) return (r - w) - 1;
+    else return rb->size - 1;
 }
 
 
 /**
  * Fill a data structure with a description of the current readable
  * data held in the ringbuffer.  This description is returned in a two
- * element array of jack_ringbuffer_data_t.  Two elements are needed
+ * element array of ringbuffer_data_t.  Two elements are needed
  * because the data to be read may be split across the end of the
  * ringbuffer.
  *
@@ -181,11 +172,10 @@ inline size_t jack_ringbuffer_write_space (const jack_ringbuffer_t * rb)
  * its corresponding @a buf field.
  *
  * @param rb a pointer to the ringbuffer structure.
- * @param vec a pointer to a 2 element array of jack_ringbuffer_data_t.
+ * @param vec a pointer to a 2 element array of ringbuffer_data_t.
  *
  */
-inline void jack_ringbuffer_get_read_vector(const jack_ringbuffer_t *rb,
-                                     jack_ringbuffer_data_t *vec)
+__always_inline void ringbuffer_get_read_vector(const ringbuffer_t *rb, ringbuffer_data_t *vec)
 {
     size_t free_cnt;
     size_t cnt2;
@@ -194,28 +184,21 @@ inline void jack_ringbuffer_get_read_vector(const jack_ringbuffer_t *rb,
     w = rb->write_ptr;
     r = rb->read_ptr;
 
-    if (w > r) {
-        free_cnt = w - r;
-    } else {
-        free_cnt = (w - r + rb->size) & rb->size_mask;
-    }
+    if (w > r) free_cnt = w - r;
+    else free_cnt = (w - r + rb->size) & rb->size_mask;
 
     cnt2 = r + free_cnt;
 
-    if (cnt2 > rb->size) {
-
-        /* Two part vector: the rest of the buffer after the current write
-           ptr, plus some from the start of the buffer. */
-
+    if (cnt2 > rb->size) // Two part vector: the rest of the buffer after the current write ptr, plus some from the start of the buffer.
+    {
         vec[0].buf = &(rb->buf[r]);
         vec[0].len = rb->size - r;
         vec[1].buf = rb->buf;
         vec[1].len = cnt2 & rb->size_mask;
 
-    } else {
-
-        /* Single part vector: just the rest of the buffer */
-
+    }
+    else // Single part vector: just the rest of the buffer.
+    {
         vec[0].buf = &(rb->buf[r]);
         vec[0].len = free_cnt;
         vec[1].len = 0;
@@ -226,7 +209,7 @@ inline void jack_ringbuffer_get_read_vector(const jack_ringbuffer_t *rb,
 /**
  * Fill a data structure with a description of the current writable
  * space in the ringbuffer.  The description is returned in a two
- * element array of jack_ringbuffer_data_t.  Two elements are needed
+ * element array of ringbuffer_data_t.  Two elements are needed
  * because the space available for writing may be split across the end
  * of the ringbuffer.
  *
@@ -240,10 +223,9 @@ inline void jack_ringbuffer_get_read_vector(const jack_ringbuffer_t *rb,
  * the corresponding @a buf field.
  *
  * @param rb a pointer to the ringbuffer structure.
- * @param vec a pointer to a 2 element array of jack_ringbuffer_data_t.
+ * @param vec a pointer to a 2 element array of ringbuffer_data_t.
  */
-inline void jack_ringbuffer_get_write_vector(const jack_ringbuffer_t *rb,
-                                      jack_ringbuffer_data_t *vec)
+__always_inline void ringbuffer_get_write_vector(const ringbuffer_t *rb, ringbuffer_data_t *vec)
 {
     size_t free_cnt;
     size_t cnt2;
@@ -252,26 +234,21 @@ inline void jack_ringbuffer_get_write_vector(const jack_ringbuffer_t *rb,
     w = rb->write_ptr;
     r = rb->read_ptr;
 
-    if (w > r) {
-        free_cnt = ((r - w + rb->size) & rb->size_mask) - 1;
-    } else if (w < r) {
-        free_cnt = (r - w) - 1;
-    } else {
-        free_cnt = rb->size - 1;
-    }
+    if (w > r) free_cnt = ((r - w + rb->size) & rb->size_mask) - 1;
+    else if (w < r) free_cnt = (r - w) - 1;
+    else free_cnt = rb->size - 1;
 
     cnt2 = w + free_cnt;
 
-    if (cnt2 > rb->size) {
-
-        /* Two part vector: the rest of the buffer after the current write
-           ptr, plus some from the start of the buffer. */
-
+    if (cnt2 > rb->size) // Two part vector: the rest of the buffer after the current write ptr, plus some from the start of the buffer.
+    {
         vec[0].buf = &(rb->buf[w]);
         vec[0].len = rb->size - w;
         vec[1].buf = rb->buf;
         vec[1].len = cnt2 & rb->size_mask;
-    } else {
+    }
+    else
+    {
         vec[0].buf = &(rb->buf[w]);
         vec[0].len = free_cnt;
         vec[1].len = 0;
@@ -289,25 +266,26 @@ inline void jack_ringbuffer_get_write_vector(const jack_ringbuffer_t *rb,
  *
  * @return the number of bytes read, which may range from 0 to cnt.
  */
-inline size_t jack_ringbuffer_read(jack_ringbuffer_t *rb, char *dest, size_t cnt)
+__always_inline size_t ringbuffer_read(ringbuffer_t *rb, char *dest, size_t cnt)
 {
     size_t free_cnt;
     size_t cnt2;
     size_t to_read;
     size_t n1, n2;
 
-    if ((free_cnt = jack_ringbuffer_read_space (rb)) == 0) {
-        return 0;
-    }
+    if ((free_cnt = ringbuffer_read_space (rb)) == 0) return 0;
 
     to_read = cnt > free_cnt ? free_cnt : cnt;
 
     cnt2 = rb->read_ptr + to_read;
 
-    if (cnt2 > rb->size) {
+    if (cnt2 > rb->size)
+    {
         n1 = rb->size - rb->read_ptr;
         n2 = cnt2 & rb->size_mask;
-    } else {
+    }
+    else
+    {
         n1 = to_read;
         n2 = 0;
     }
@@ -315,7 +293,8 @@ inline size_t jack_ringbuffer_read(jack_ringbuffer_t *rb, char *dest, size_t cnt
     memcpy (dest, &(rb->buf[rb->read_ptr]), n1);
     rb->read_ptr = (rb->read_ptr + n1) & rb->size_mask;
 
-    if (n2) {
+    if (n2)
+    {
         memcpy (dest + n1, &(rb->buf[rb->read_ptr]), n2);
         rb->read_ptr = (rb->read_ptr + n2) & rb->size_mask;
     }
@@ -324,12 +303,12 @@ inline size_t jack_ringbuffer_read(jack_ringbuffer_t *rb, char *dest, size_t cnt
 }
 
 /**
- * Read data from the ringbuffer. Opposed to jack_ringbuffer_read()
+ * Read data from the ringbuffer. Opposed to ringbuffer_read()
  * this function does not move the read pointer. Thus it's
  * a convenient way to inspect data in the ringbuffer in a
  * continuous fashion. The price is that the data is copied
  * into a user provided buffer. For "raw" non-copy inspection
- * of the data in the ringbuffer use jack_ringbuffer_get_read_vector().
+ * of the data in the ringbuffer use ringbuffer_get_read_vector().
  *
  * @param rb a pointer to the ringbuffer structure.
  * @param dest a pointer to a buffer where data read from the
@@ -338,7 +317,7 @@ inline size_t jack_ringbuffer_read(jack_ringbuffer_t *rb, char *dest, size_t cnt
  *
  * @return the number of bytes read, which may range from 0 to cnt.
  */
-inline size_t jack_ringbuffer_peek(jack_ringbuffer_t *rb, char *dest, size_t cnt)
+__always_inline size_t ringbuffer_peek(ringbuffer_t *rb, char *dest, size_t cnt)
 {
     size_t free_cnt;
     size_t cnt2;
@@ -348,18 +327,19 @@ inline size_t jack_ringbuffer_peek(jack_ringbuffer_t *rb, char *dest, size_t cnt
 
     tmp_read_ptr = rb->read_ptr;
 
-    if ((free_cnt = jack_ringbuffer_read_space (rb)) == 0) {
-        return 0;
-    }
+    if ((free_cnt = ringbuffer_read_space (rb)) == 0) return 0;
 
     to_read = cnt > free_cnt ? free_cnt : cnt;
 
     cnt2 = tmp_read_ptr + to_read;
 
-    if (cnt2 > rb->size) {
+    if (cnt2 > rb->size)
+    {
         n1 = rb->size - tmp_read_ptr;
         n2 = cnt2 & rb->size_mask;
-    } else {
+    }
+    else
+    {
         n1 = to_read;
         n2 = 0;
     }
@@ -367,9 +347,7 @@ inline size_t jack_ringbuffer_peek(jack_ringbuffer_t *rb, char *dest, size_t cnt
     memcpy (dest, &(rb->buf[tmp_read_ptr]), n1);
     tmp_read_ptr = (tmp_read_ptr + n1) & rb->size_mask;
 
-    if (n2) {
-        memcpy (dest + n1, &(rb->buf[tmp_read_ptr]), n2);
-    }
+    if (n2) memcpy (dest + n1, &(rb->buf[tmp_read_ptr]), n2);
 
     return to_read;
 }
@@ -379,14 +357,14 @@ inline size_t jack_ringbuffer_peek(jack_ringbuffer_t *rb, char *dest, size_t cnt
  * Advance the read pointer.
  *
  * After data have been read from the ringbuffer using the pointers
- * returned by jack_ringbuffer_get_read_vector(), use this function to
+ * returned by ringbuffer_get_read_vector(), use this function to
  * advance the buffer pointers, making that space available for future
  * write operations.
  *
  * @param rb a pointer to the ringbuffer structure.
  * @param cnt the number of bytes read.
  */
-inline void jack_ringbuffer_read_advance(jack_ringbuffer_t *rb, size_t cnt)
+__always_inline void ringbuffer_read_advance(ringbuffer_t *rb, size_t cnt)
 {
     size_t tmp = (rb->read_ptr + cnt) & rb->size_mask;
 
@@ -401,12 +379,10 @@ inline void jack_ringbuffer_read_advance(jack_ringbuffer_t *rb, size_t cnt)
  *
  * @param rb a pointer to the ringbuffer structure.
  */
-inline int jack_ringbuffer_mlock(jack_ringbuffer_t *rb)
+__always_inline int ringbuffer_mlock(ringbuffer_t *rb)
 {
 #ifdef USE_MLOCK
-    if (mlock (rb->buf, rb->size)) {
-        return -1;
-    }
+    if (mlock (rb->buf, rb->size)) return -1;
 #endif  /* USE_MLOCK */
     rb->mlocked = 1;
     return 0;
@@ -420,7 +396,7 @@ inline int jack_ringbuffer_mlock(jack_ringbuffer_t *rb)
  *
  * @param rb a pointer to the ringbuffer structure.
  */
-inline void jack_ringbuffer_reset(jack_ringbuffer_t *rb)
+__always_inline void ringbuffer_reset(ringbuffer_t *rb)
 {
     rb->read_ptr = 0;
     rb->write_ptr = 0;
@@ -436,26 +412,26 @@ inline void jack_ringbuffer_reset(jack_ringbuffer_t *rb)
  *
  * @return the number of bytes write, which may range from 0 to cnt
  */
-inline size_t jack_ringbuffer_write(jack_ringbuffer_t *rb, const char *src,
-                             size_t cnt)
+__always_inline size_t ringbuffer_write(ringbuffer_t *rb, const char *src, size_t cnt)
 {
     size_t free_cnt;
     size_t cnt2;
     size_t to_write;
     size_t n1, n2;
 
-    if ((free_cnt = jack_ringbuffer_write_space (rb)) == 0) {
-        return 0;
-    }
+    if ((free_cnt = ringbuffer_write_space (rb)) == 0) return 0;
 
     to_write = cnt > free_cnt ? free_cnt : cnt;
 
     cnt2 = rb->write_ptr + to_write;
 
-    if (cnt2 > rb->size) {
+    if (cnt2 > rb->size)
+    {
         n1 = rb->size - rb->write_ptr;
         n2 = cnt2 & rb->size_mask;
-    } else {
+    }
+    else
+    {
         n1 = to_write;
         n2 = 0;
     }
@@ -463,7 +439,8 @@ inline size_t jack_ringbuffer_write(jack_ringbuffer_t *rb, const char *src,
     memcpy (&(rb->buf[rb->write_ptr]), src, n1);
     rb->write_ptr = (rb->write_ptr + n1) & rb->size_mask;
 
-    if (n2) {
+    if (n2)
+    {
         memcpy (&(rb->buf[rb->write_ptr]), src + n1, n2);
         rb->write_ptr = (rb->write_ptr + n2) & rb->size_mask;
     }
@@ -476,14 +453,14 @@ inline size_t jack_ringbuffer_write(jack_ringbuffer_t *rb, const char *src,
  * Advance the write pointer.
  *
  * After data have been written the ringbuffer using the pointers
- * returned by jack_ringbuffer_get_write_vector(), use this function
+ * returned by ringbuffer_get_write_vector(), use this function
  * to advance the buffer pointer, making the data available for future
  * read operations.
  *
  * @param rb a pointer to the ringbuffer structure.
  * @param cnt the number of bytes written.
  */
-inline void jack_ringbuffer_write_advance(jack_ringbuffer_t *rb, size_t cnt)
+__always_inline void ringbuffer_write_advance(ringbuffer_t *rb, size_t cnt)
 {
     size_t tmp = (rb->write_ptr + cnt) & rb->size_mask;
 
@@ -499,12 +476,12 @@ inline void jack_ringbuffer_write_advance(jack_ringbuffer_t *rb, size_t cnt)
  * @param rb a pointer to the ringbuffer structure.
  * @param sz the new size, that must be less than allocated size.
  */
-inline void jack_ringbuffer_reset_size (jack_ringbuffer_t * rb, size_t sz)
+__always_inline void ringbuffer_reset_size (ringbuffer_t * rb, size_t sz)
 {
     rb->read_ptr = 0;
     rb->write_ptr = 0;
     char* zeros = (char*)calloc(1, sz);
-    jack_ringbuffer_write(rb, zeros, sz);
+    ringbuffer_write(rb, zeros, sz);
     free(zeros);
     rb->read_ptr = 0;
     rb->write_ptr = 0;
