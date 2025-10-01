@@ -15,7 +15,8 @@ Main differences from other authors' utils:
 
 We use them in on-stage mode.
 
-To build just run build.sh script (in each directory) or classical make:
+To build just run build.sh script (it will create directory vban_utils and put results there)
+or classical make (in each directory):
 
 make
 sudo make install
