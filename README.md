@@ -1,9 +1,18 @@
-#PIPEWIRE VBAN UTILS
+#VBAN UTILS
 
-Here are CLI pipewire VBAN receptor and emitter
+Here are CLI VBAN receptor and emitter for Jack (Linux/Mac) and Pipewire (Linux Only)
 They have NO autoconnect option (use qpwgraph, qjackctl, helvum, ray-session and others to connect)
 to have access to ALL channels. Just run them with -h key for help (they are like Benoit's utils).
-Main difference from Wim Taymans's modules: my anti-latency algorythm like vban_jack ones presents.
+
+Main differences from other authors' utils:
+1. RECEPTOR HAS LIBZITA RESAMPLER BY FONS ADRIAENSEN!!!
+2. Receptors have singlestream and multistream modes.
+   In multistream mode they will receive all the streams on the UDP port,
+   and SAMPLERATE DOES NOT MATTER (see p.1).
+3. In single stream mode is not necessary to give both Streamname and IP,
+   If you give IP only - it will start receiving the 1st stream from this IP, which found,
+   If you give Streamname only - it will start receiving 1st stream with this Streamname.
+
 We use them in on-stage mode.
 
 To build just run build.sh script (Sorry, I had no time to write normal makefile).
@@ -12,3 +21,11 @@ Enjoy! They just work!
 
 Also you can use unix-pipes (named, stdin/stdout) instead of network sockets
 (VBAN packet format presents).
+
+TODO:
+1. ALSA ones for Linux (coming soon, thanks to Gary P. Scavone),
+2. Virtual soundcards for Mac OS (also coming soon, thanks to Victor Gaydov),
+3. GUI versions or manager (if anybody helps - it will be really cool!),
+4. LV2 vanilla plugins with WebGUI.
+
+See also https://github.com/billythehippo/VBANEmitter.vst3 and https://github.com/billythehippo/VBANReceptor.vst3
