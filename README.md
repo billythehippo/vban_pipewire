@@ -15,7 +15,11 @@ Main differences from other authors' utils:
 
 We use them in on-stage mode.
 
-To build just run build.sh script (Sorry, I had no time to write normal makefile).
+To build just run build.sh script (in each directory) or classical make:
+
+make
+sudo make install
+make clean
 
 Enjoy! They just work!
 
