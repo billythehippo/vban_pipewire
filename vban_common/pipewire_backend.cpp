@@ -286,7 +286,7 @@ static void on_tx_process(void *userdata)
     }
 
     context->txbuf = samples_ptr;
-    vban_send_txbuffer(context, 0, 2);
+    vban_send_txbuffer(context, context->iptx, 2);
 
     pw_stream_queue_buffer(data->stream, b);
 }
